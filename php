@@ -1,43 +1,26 @@
-<?php
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    die('Method Not Allowed');
-}
+from flask import Flask, request
+import requests
+import os
 
-if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-    http_response_code(400);
-    die('No image uploaded');
-}
+app = Flask(__name__)
 
-// Save temporarily
-$tmpFile = $_FILES['image']['tmp_name'];
-$filepath = sys_get_temp_dir() . '/snap_' . uniqid() . '.jpg';
-move_uploaded_file($tmpFile, $filepath);
+# Replace with your bot token and chat ID
+BOT_TOKEN = '7789208063:AAGJnbnn6qKkqhifWpQ_slUlrXahwAvxkx0'
+CHAT_ID = '1660407337'
 
-// YOUR TELEGRAM CREDENTIALS
-$botToken = '7789208063:AAGJnbnn6qKkqhifWpQ_slUlrXahwAvxkx0';
-$chatId   = '1660407337'; // ←←← REPLACE THIS WITH YOUR REAL CHAT ID
+@app.route('/send', methods=['POST'])
+def send():
+    if 'image' not in request.files:
+        return 'No image', 400
 
-// Send to Telegram
-$ch = curl_init("https://api.telegram.org/bot{$botToken}/sendPhoto");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, [
-    'chat_id' => $chatId,
-    'photo' => new CURLFile($filepath),
-    'caption' => "📸 Auto capture at " . date('Y-m-d H:i:s')
-]);
+    file = request.files['image']
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto'
+    response = requests.post(url, data={'chat_id': CHAT_ID}, files={'photo': file})
 
-$result = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
+    if response.ok:
+        return 'OK', 200
+    else:
+        return 'Failed', 500
 
-unlink($filepath); // cleanup
-
-if ($httpCode === 200) {
-    echo "OK";
-} else {
-    error_log("Telegram send failed: " . $result);
-    http_response_code(500);
-}
-?>
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
